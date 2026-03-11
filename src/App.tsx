@@ -14,7 +14,7 @@ const FALL_SPEEDS: Record<Difficulty, number> = {
   hard: 25    // 25% per second
 };
 
-const BGM_URL = "/counting-song.wav";
+const BGM_URL = `${import.meta.env.BASE_URL}counting-song.wav`;
 
 export default function App() {
   const [gameState, setGameState] = useState<GameState>({
