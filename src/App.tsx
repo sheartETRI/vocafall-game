@@ -23,7 +23,6 @@ export default function App() {
     score: 0,
     life: INITIAL_LIFE,
     level: 1,
-    combo: 0,
     status: 'idle',
     difficulty: 'normal',
     stageProgress: 0,
@@ -110,8 +109,7 @@ export default function App() {
     playSFX(CORRECT_SFX_URL);
     
     setGameState(prev => {
-      const comboBonus = prev.combo >= 10 ? 20 : prev.combo >= 5 ? 10 : prev.combo >= 3 ? 5 : 0;
-      const points = 10 + comboBonus;
+      const points = 10;
       const newScore = prev.score + points;
       const newProgress = prev.stageProgress + 1;
       
@@ -123,7 +121,6 @@ export default function App() {
       return {
         ...prev,
         score: newScore,
-        combo: prev.combo + 1,
         stageProgress: newProgress,
         status: newStatus,
       };
@@ -137,7 +134,7 @@ export default function App() {
         return prev;
       });
     }, 500);
-  }, [generateNewWord]);
+  }, [generateNewWord, playSFX]);
 
   const handleMiss = useCallback(() => {
     if (isProcessingRef.current) return;
@@ -150,8 +147,6 @@ export default function App() {
       return {
         ...prev,
         life: newLife,
-        combo: 0,
-        score: Math.max(0, prev.score - 5),
         status: newLife <= 0 ? 'gameover' : prev.status
       };
     });
@@ -164,7 +159,7 @@ export default function App() {
         return prev;
       });
     }, 500);
-  }, [generateNewWord]);
+  }, [generateNewWord, playSFX]);
 
   const handleIncorrectSelection = useCallback(() => {
     // Don't set isProcessingRef.current = true here because we want to allow more guesses
@@ -174,8 +169,6 @@ export default function App() {
     setGameState(prev => {
       return {
         ...prev,
-        combo: 0,
-        score: Math.max(0, prev.score - 2), // Smaller penalty for wrong choice
       };
     });
 
@@ -183,9 +176,9 @@ export default function App() {
     setTimeout(() => {
       setFeedback(null);
     }, 400);
-  }, []);
+  }, [playSFX]);
 
-  const handleSelect = (meaning: string) => {
+  const handleSelect = useCallback((meaning: string) => {
     if (gameState.status !== 'playing' || feedback === 'correct' || isProcessingRef.current) return;
     
     if (meaning === currentWord?.meaning) {
@@ -193,7 +186,7 @@ export default function App() {
     } else {
       handleIncorrectSelection();
     }
-  };
+  }, [gameState.status, feedback, currentWord, handleCorrect, handleIncorrectSelection]);
 
   // Game Loop
   const animate = useCallback((time: number) => {
@@ -277,13 +270,14 @@ export default function App() {
     <div className="min-h-screen bg-[#E4E3E0] flex flex-col font-sans selection:bg-black selection:text-white overflow-hidden" id="app-root">
       <div className="max-w-2xl w-full mx-auto flex flex-col h-screen p-4" id="game-container">
         <div className="flex items-center justify-between gap-4">
-          <HUD 
-            score={gameState.score} 
-            life={gameState.life} 
-            level={gameState.level} 
-            combo={gameState.combo} 
-            progress={gameState.stageProgress}
-          />
+          <div className="flex-1">
+            <HUD 
+              score={gameState.score} 
+              life={gameState.life} 
+              level={gameState.level} 
+              progress={gameState.stageProgress}
+            />
+          </div>
           <div className="flex items-center gap-2">
             <button 
               onClick={() => setIsMusicOn(!isMusicOn)}
